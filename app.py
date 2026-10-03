@@ -132,7 +132,7 @@ def ask(prompt, key, js=False):
     if js:
         cfg["responseMimeType"] = "application/json"
     err = ""
-    for m in [x for x in (os.environ.get("GEMINI_MODEL"), "gemini-3.6-flash", "gemini-2.5-flash") if x]:
+    for m in [x for x in (os.environ.get("GEMINI_MODEL"), "gemini-3.8-flash", "gemini-3.6-flash") if x]:
         r = requests.post(f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent",
                           headers={"x-goog-api-key": key},
                           json={"contents": [{"parts": [{"text": prompt}]}], "generationConfig": cfg}, timeout=60)
