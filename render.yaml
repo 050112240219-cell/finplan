@@ -1,0 +1,21 @@
+databases:
+  - name: finplan-db
+    plan: free
+services:
+  - type: web
+    name: goal-finance-planner
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 90
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.3
+      - key: DATABASE_URL
+        fromDatabase:
+          name: finplan-db
+          property: connectionString
+      - key: ADMIN_KEY
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false
