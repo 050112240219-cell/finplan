@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Goal-based Personal Finance Planning Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#eef2f6;--card:#fff;--tx:#12263a;--mu:#4a5b6e;--pr:#0f766e;--onpr:#fff;--ac:#b45309;--bd:#cfd8e3;--bad:#b42318;--ok:#067647;--warn:#fff4e5}
+[data-theme=dark]{--bg:#0a1420;--card:#122032;--tx:#eef3f8;--mu:#a8b8ca;--pr:#2dd4bf;--onpr:#04201c;--ac:#fbbf24;--bd:#27405c;--bad:#ff9a8f;--ok:#6ee7b7;--warn:#2b2110}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 'Be Vietnam Pro',system-ui,sans-serif}
+header{background:var(--card);border-bottom:3px solid var(--pr);padding:14px 20px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;position:sticky;top:0;z-index:5}
+header h1{font-size:20px;margin:0;flex:1;min-width:240px}header p{margin:0;color:var(--mu);font-size:13px}
+button,select,input{font:inherit;color:var(--tx)}
+button{background:var(--pr);color:var(--onpr);border:0;border-radius:6px;padding:8px 14px;font-weight:700;cursor:pointer}
+button.ghost{background:transparent;color:var(--tx);border:1px solid var(--bd)}button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--ac);outline-offset:1px}
+main{display:grid;grid-template-columns:minmax(300px,420px) 1fr;gap:16px;padding:16px;max-width:1500px;margin:auto}
+@media(max-width:960px){main{grid-template-columns:1fr}}
+section{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:16px;margin-bottom:16px}
+h2{font-size:16px;margin:0 0 10px}h3{font-size:14px;margin:12px 0 6px}
+label{display:block;margin:8px 0;font-size:13px;color:var(--mu)}
+input,select,textarea{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:6px;padding:7px 9px;margin-top:3px}
+input[type=range]{padding:0;accent-color:var(--pr)}small{display:block;color:var(--ac);font-weight:500;min-height:16px}
+.goal{border-left:4px solid var(--pr);padding-left:10px;margin:12px 0}.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi{border:1px solid var(--bd);border-radius:8px;padding:10px}.kpi span{font-size:12px;color:var(--mu)}.kpi b{display:block;font-size:17px}
+.warn{background:var(--warn);border-left:4px solid var(--ac);padding:8px 10px;margin:6px 0;border-radius:4px}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}.charts div{height:260px;position:relative}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:6px 8px;border-bottom:1px solid var(--bd);text-align:left}th{color:var(--mu)}
+.badge{padding:2px 8px;border-radius:99px;font-weight:700;border:1px solid currentColor}.hi{color:var(--ok)}.lo{color:var(--bad)}.mid{color:var(--ac)}
+.scroll{overflow-x:auto}#adv p{margin:6px 0}#adv li{margin-left:18px;display:list-item}.note{font-size:12px;color:var(--mu)}
+</style></head><body>
+<header><div style="flex:1;min-width:240px"><h1 data-i="title"></h1><p data-i="sub"></p></div>
+<button class="ghost" id="lang">Tiếng Việt</button><button class="ghost" id="theme">☾ Dark</button></header>
+<main>
+<div>
+<section><h2 data-i="intake_h"></h2><textarea id="itx" rows="4" data-p="intake_ph"></textarea><div class="row"><button id="ibtn" data-i="intake_btn"></button></div><div id="imiss" class="note"></div></section>
+<section><h2 data-i="profile_h"></h2><label><span data-i="cname"></span><input id="cname"></label><div id="pf"></div></section>
+<section><h2 data-i="goals_h"></h2><div id="gl"></div></section>
+<section><h2 data-i="assump_h"></h2><div id="sl"></div></section>
+</div>
+<div>
+<section><div id="err" class="warn" hidden></div><div class="kpis" id="kpis"></div></section>
+<section><h2 data-i="warn_h"></h2><div id="warns"></div></section>
+<section><div class="charts"><div><canvas id="c1"></canvas></div><div><canvas id="c2"></canvas></div><div><canvas id="c3"></canvas></div></div></section>
+<section><h2 data-i="prio_h"></h2><div class="scroll"><table id="tg"></table></div></section>
+<section><h2 data-i="scen_h"></h2><div class="scroll"><table id="ts"></table></div><h3 data-i="stress_h"></h3><div class="scroll"><table id="tt"></table></div></section>
+<section><h2 data-i="ai_h"></h2><label><span data-i="key"></span><input id="key" type="password" autocomplete="off"></label>
+<label style="color:var(--tx)"><input type="checkbox" id="cf" style="width:auto"> <span data-i="confirm"></span></label>
+<div class="row"><button id="ai" data-i="ai_btn"></button><button id="save" class="ghost" data-i="save_btn"></button></div><div class="row" style="margin-top:8px"><button id="xl" class="ghost" data-i="xl_btn"></button><span id="msg" class="note"></span></div>
+<div id="adv"></div><p class="note" data-i="disc"></p></section>
+<section><h2 data-i="admin_h"></h2><div class="row"><input id="akey" type="password" data-p="akey"><button id="axl" class="ghost" data-i="axl_btn"></button></div></section>
+</div></main>
+<script>
+const T={en:{title:"Goal-based Personal Finance Planning Engine",sub:"Scenario-based planning for education — not investment advice.",intake_h:"Describe your situation (optional)",intake_ph:"e.g. I earn 25 million a month, spend 12 million, want 500 million for a home in 6 years…",intake_btn:"Fill the form with AI",profile_h:"Financial profile (VND)",cname:"Name",income:"Monthly income",expenses:"Monthly expenses",debt:"Total debt",debt_payment:"Monthly debt payment",cash:"Cash & deposits",investments:"Investments",other_assets:"Other assets",goals_h:"3 financial goals",goal:"Goal",g_name:"Name",g_type:"Type",g_target:"Target amount",g_cur:"Already saved",g_years:"Years to goal",ty_emergency:"Emergency fund",ty_home:"Home",ty_education:"Education",ty_retirement:"Retirement",ty_other:"Other",assump_h:"Assumptions & what-if (updates instantly)",return_rate:"Annual return (%)",save_pct:"Share of surplus used for goals (%)",income_adj:"Income change (%)",expense_adj:"Expense change (%)",horizon_adj:"Goal horizon shift (years)",k_sur:"Monthly surplus",k_sr:"Savings rate",k_dti:"Debt-to-income",k_em:"Emergency fund",k_nw:"Net worth",k_ov:"Goals funded",months:"months",warn_h:"Financial warnings",w_none:"No warnings detected.",prio_h:"Goal feasibility & priority",c_goal:"Goal",c_req:"Required / month",c_fund:"Funded / month",c_feas:"Feasibility",c_why:"Why",r_type:"Safety-critical or high-value goal type",r_urgent:"Short horizon",r_afford:"Most affordable",scen_h:"Return scenarios",stress_h:"Stress test",c_sc:"Scenario",c_rate:"Return",c_tot:"Total required / month",c_ov:"Funded",c_sur:"Surplus",c_min:"Weakest goal",sc_cons:"Conservative",sc_base:"Base",sc_opt:"Optimistic",s_base:"Base case",s_inc:"Income −20%",s_exp:"Expenses +15%",s_both:"Income −20% & expenses +15%",s_ret:"Return −3 pts",ch1:"Where monthly income goes",ch2:"Goal feasibility (%)",ch3:"Goals funded under stress (%)",d_exp:"Living expenses",d_debt:"Debt payments",d_goal:"Allocated to goals",d_free:"Unallocated",solo:"Standalone",after:"After prioritising",ai_h:"AI advice, save & export",key:"Google AI Studio API key (used for this request only; leave blank to use the server key)",confirm:"I confirm the profile and assumptions above are correct.",ai_btn:"Get personalised advice",save_btn:"Save my plan",xl_btn:"Export my plan (.xlsx)",saved:"Saved. ID: ",disc:"Educational planning tool. It does not recommend specific securities and cannot guarantee returns. A person should review any decision before acting.",admin_h:"Admin",akey:"Admin key",axl_btn:"Export all customers (.xlsx)",e_no_income:"Enter a monthly income above 0 to start.",e_no_goals:"Add at least one goal with a target and a number of years.",w_neg_cf:"Negative cash flow: spending and debt payments exceed income.",w_high_dti:"High debt load: %0% of income goes to debt payments.",w_low_save:"Low savings rate: only %0% of income is left over.",w_low_emerg:"Emergency fund covers only %0 months of expenses.",w_low_goal:"Low chance of reaching “%0”: only %1% funded.",w_bad_goal:"Goal “%0” is incomplete and was ignored.",w_contradiction:"“%0”: amount already saved is higher than the target. Please check.",w_debt_mismatch:"A debt payment was entered but total debt is 0. Please check.",need:"Not stated by you: ",busy:"Working…"},
+vi:{title:"Công cụ lập kế hoạch tài chính cá nhân theo mục tiêu",sub:"Lập kế hoạch theo kịch bản, phục vụ học tập — không phải tư vấn đầu tư.",intake_h:"Mô tả tình huống của bạn (không bắt buộc)",intake_ph:"Ví dụ: Tôi thu nhập 25 triệu/tháng, chi 12 triệu, muốn có 500 triệu mua nhà sau 6 năm…",intake_btn:"Để AI điền vào biểu mẫu",profile_h:"Hồ sơ tài chính (VNĐ)",cname:"Họ tên",income:"Thu nhập hàng tháng",expenses:"Chi tiêu hàng tháng",debt:"Tổng nợ",debt_payment:"Trả nợ hàng tháng",cash:"Tiền mặt & tiền gửi",investments:"Đầu tư",other_assets:"Tài sản khác",goals_h:"3 mục tiêu tài chính",goal:"Mục tiêu",g_name:"Tên",g_type:"Loại",g_target:"Số tiền mục tiêu",g_cur:"Đã tích lũy",g_years:"Số năm đạt mục tiêu",ty_emergency:"Quỹ khẩn cấp",ty_home:"Nhà ở",ty_education:"Giáo dục",ty_retirement:"Hưu trí",ty_other:"Khác",assump_h:"Giả định & what-if (cập nhật ngay)",return_rate:"Lợi suất hàng năm (%)",save_pct:"Tỷ lệ tiền dư dành cho mục tiêu (%)",income_adj:"Thay đổi thu nhập (%)",expense_adj:"Thay đổi chi tiêu (%)",horizon_adj:"Dịch thời hạn mục tiêu (năm)",k_sur:"Tiền dư hàng tháng",k_sr:"Tỷ lệ tiết kiệm",k_dti:"Nợ/thu nhập",k_em:"Quỹ khẩn cấp",k_nw:"Tài sản ròng",k_ov:"Mục tiêu được tài trợ",months:"tháng",warn_h:"Cảnh báo tài chính",w_none:"Không phát hiện cảnh báo.",prio_h:"Khả thi & ưu tiên mục tiêu",c_goal:"Mục tiêu",c_req:"Cần / tháng",c_fund:"Phân bổ / tháng",c_feas:"Khả thi",c_why:"Lý do",r_type:"Loại mục tiêu quan trọng hoặc an toàn",r_urgent:"Thời hạn ngắn",r_afford:"Dễ đạt nhất",scen_h:"Kịch bản lợi suất",stress_h:"Stress test",c_sc:"Kịch bản",c_rate:"Lợi suất",c_tot:"Tổng cần / tháng",c_ov:"Được tài trợ",c_sur:"Tiền dư",c_min:"Mục tiêu yếu nhất",sc_cons:"Thận trọng",sc_base:"Cơ sở",sc_opt:"Lạc quan",s_base:"Trường hợp cơ sở",s_inc:"Thu nhập −20%",s_exp:"Chi tiêu +15%",s_both:"Thu nhập −20% & chi tiêu +15%",s_ret:"Lợi suất −3 điểm",ch1:"Thu nhập hàng tháng được dùng ra sao",ch2:"Mức khả thi của mục tiêu (%)",ch3:"Mục tiêu được tài trợ khi căng thẳng (%)",d_exp:"Chi tiêu sinh hoạt",d_debt:"Trả nợ",d_goal:"Dành cho mục tiêu",d_free:"Chưa phân bổ",solo:"Độc lập",after:"Sau khi ưu tiên",ai_h:"Tư vấn AI, lưu & xuất file",key:"Google AI Studio API key (chỉ dùng cho lần gọi này; để trống để dùng key của máy chủ)",confirm:"Tôi xác nhận hồ sơ và các giả định ở trên là đúng.",ai_btn:"Nhận tư vấn cá nhân hóa",save_btn:"Lưu kế hoạch",xl_btn:"Xuất kế hoạch (.xlsx)",saved:"Đã lưu. Mã: ",disc:"Công cụ lập kế hoạch phục vụ học tập. Không khuyến nghị chứng khoán cụ thể và không đảm bảo lợi nhuận. Cần có người xem xét trước khi hành động.",admin_h:"Quản trị viên",akey:"Khóa quản trị",axl_btn:"Xuất toàn bộ khách hàng (.xlsx)",e_no_income:"Nhập thu nhập hàng tháng lớn hơn 0 để bắt đầu.",e_no_goals:"Thêm ít nhất một mục tiêu có số tiền và số năm.",w_neg_cf:"Dòng tiền âm: chi tiêu và trả nợ vượt thu nhập.",w_high_dti:"Nợ cao: %0% thu nhập dùng để trả nợ.",w_low_save:"Tiết kiệm thấp: chỉ còn dư %0% thu nhập.",w_low_emerg:"Quỹ khẩn cấp chỉ đủ %0 tháng chi tiêu.",w_low_goal:"Khả năng đạt “%0” thấp: mới tài trợ %1%.",w_bad_goal:"Mục tiêu “%0” chưa đủ thông tin nên bị bỏ qua.",w_contradiction:"“%0”: số đã tích lũy lớn hơn mục tiêu. Vui lòng kiểm tra.",w_debt_mismatch:"Có khoản trả nợ nhưng tổng nợ bằng 0. Vui lòng kiểm tra.",need:"Bạn chưa cung cấp: ",busy:"Đang xử lý…"}};
+let L='en',last=null,advice='';const $=i=>document.getElementById(i),t=k=>T[L][k]||k;
+const fm=v=>Math.round(v).toLocaleString('en-US')+' VNĐ',pc=v=>v.toFixed(1)+'%';
+const F=[['income',30000000],['expenses',15000000],['debt',100000000],['debt_payment',4000000],['cash',40000000],['investments',50000000],['other_assets',0]];
+const G=[['Emergency fund','emergency',100000000,20000000,2],['Home down payment','home',600000000,50000000,8],['Retirement','retirement',1000000000,0,25]];
+const GT=['emergency','home','education','retirement','other'];
+const S=[['return_rate',0,15,.5,6],['save_pct',10,100,5,100],['income_adj',-50,50,5,0],['expense_adj',-30,50,5,0],['horizon_adj',-5,5,1,0]];
+$('pf').innerHTML=F.map(([k,v])=>`<label><span data-i="${k}"></span><input id="${k}" type="number" min="0" step="100000" value="${v}"><small id="h_${k}"></small></label>`).join('');
+$('gl').innerHTML=G.map((g,i)=>`<div class="goal"><b><span data-i="goal"></span> ${i+1}</b><label><span data-i="g_name"></span><input id="gn${i}" value="${g[0]}"></label><label><span data-i="g_type"></span><select id="gt${i}">${GT.map(x=>`<option value="${x}" data-i="ty_${x}"${x==g[1]?' selected':''}></option>`).join('')}</select></label><label><span data-i="g_target"></span><input id="gg${i}" type="number" min="0" step="1000000" value="${g[2]}"><small id="h_gg${i}"></small></label><div class="row"><label><span data-i="g_cur"></span><input id="gc${i}" type="number" min="0" step="1000000" value="${g[3]}"><small id="h_gc${i}"></small></label><label><span data-i="g_years"></span><input id="gy${i}" type="number" min="0.5" step="0.5" value="${g[4]}"></label></div></div>`).join('');
+$('sl').innerHTML=S.map(([k,a,b,s,v])=>`<label><span data-i="${k}"></span>: <b id="o_${k}">${v}</b><input id="${k}" type="range" min="${a}" max="${b}" step="${s}" value="${v}"></label>`).join('');
+function collect(){const d={name:$('cname').value};F.forEach(([k])=>d[k]=+$(k).value||0);S.forEach(([k])=>d[k]=+$(k).value);d.goals=[0,1,2].map(i=>({name:$('gn'+i).value,type:$('gt'+i).value,target:+$('gg'+i).value||0,current:+$('gc'+i).value||0,years:+$('gy'+i).value||0}));return d}
+function i18n(){document.documentElement.lang=L;document.querySelectorAll('[data-i]').forEach(e=>e.textContent=t(e.dataset.i));document.querySelectorAll('[data-p]').forEach(e=>e.placeholder=t(e.dataset.p));$('lang').textContent=L=='en'?'Tiếng Việt':'English';$('theme').textContent=(document.documentElement.dataset.theme=='dark'?'☀ Light':'☾ Dark');hints();if(last)render(last)}
+function hints(){document.querySelectorAll('input[type=number]').forEach(i=>{const h=$('h_'+i.id);if(h)h.textContent=fm(+i.value||0)});S.forEach(([k])=>$('o_'+k).textContent=$(k).value)}
+let tm;function sched(){hints();clearTimeout(tm);tm=setTimeout(run,250)}
+document.querySelectorAll('input,select').forEach(e=>{if(e.id&&!['key','akey','cf','cname'].includes(e.id))e.addEventListener('input',sched)});
+async function post(u,b,h={}){const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json',...h},body:JSON.stringify(b)});return r}
+async function run(){const d=collect();last=await (await post('/api/analyze',d)).json();advice='';$('adv').innerHTML='';render(last)}
+const cls=v=>v>=80?'hi':v>=50?'mid':'lo';
+function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
+let C={};function chart(id,cfg){if(C[id])C[id].destroy();C[id]=new Chart($(id),cfg)}
+function render(r){btns();$('err').hidden=!r.error;if(r.error){$('err').textContent=t('e_'+r.error);return}
+const b=r.base,m=r.metrics;
+$('kpis').innerHTML=[['k_sur',fm(b.surplus),b.surplus<0],['k_sr',pc(m.save_rate),m.save_rate<10],['k_dti',pc(m.dti),m.dti>40],['k_em',m.emerg.toFixed(1)+' '+t('months'),m.emerg<3],['k_nw',fm(m.net_worth),m.net_worth<0],['k_ov',pc(b.overall),b.overall<50]].map(([k,v,bad])=>`<div class="kpi"><span>${t(k)}</span><b class="${bad?'lo':''}">${v}</b></div>`).join('');
+$('warns').innerHTML=r.warnings.length?r.warnings.map(x=>`<div class="warn">⚠ ${t('w_'+x.code).replace(/%(\d)/g,(_,i)=>x.v[i])}</div>`).join(''):`<div class="note">${t('w_none')}</div>`;
+const gs=[...b.goals].sort((a,c)=>a.rank-c.rank);
+$('tg').innerHTML=`<tr><th>#</th><th>${t('c_goal')}</th><th>${t('c_req')}</th><th>${t('c_fund')}</th><th>${t('c_feas')}</th><th>${t('c_why')}</th></tr>`+gs.map(g=>`<tr><td>${g.rank}</td><td>${esc(g.name)}</td><td>${fm(g.required)}</td><td>${fm(g.funded)}</td><td><span class="badge ${cls(g.feasibility)}">${g.feasibility.toFixed(0)}%</span></td><td>${t('r_'+g.reason)}</td></tr>`).join('');
+$('ts').innerHTML=`<tr><th>${t('c_sc')}</th><th>${t('c_rate')}</th><th>${t('c_tot')}</th><th>${t('c_ov')}</th></tr>`+r.scenarios.map(s=>`<tr><td>${t(s.code)}</td><td>${s.rate}%</td><td>${fm(s.total_required)}</td><td><span class="badge ${cls(s.overall)}">${s.overall.toFixed(0)}%</span></td></tr>`).join('');
+$('tt').innerHTML=`<tr><th>${t('c_sc')}</th><th>${t('c_sur')}</th><th>${t('c_ov')}</th><th>${t('c_min')}</th></tr>`+r.stress.map(s=>`<tr><td>${t(s.code)}</td><td class="${s.surplus<0?'lo':''}">${fm(s.surplus)}</td><td><span class="badge ${cls(s.overall)}">${s.overall.toFixed(0)}%</span></td><td>${Math.min(...s.goals).toFixed(0)}%</td></tr>`).join('');
+Chart.defaults.color=css('--tx');Chart.defaults.font.family="'Be Vietnam Pro',system-ui";Chart.defaults.borderColor=css('--bd');
+const P=[css('--mu'),css('--bad'),css('--pr'),css('--ac')];
+chart('c1',{type:'doughnut',data:{labels:[t('d_exp'),t('d_debt'),t('d_goal'),t('d_free')],datasets:[{data:[b.expenses,b.debt_payment,b.allocated,Math.max(0,b.surplus-b.allocated)],backgroundColor:P,borderColor:css('--card')}]},options:{maintainAspectRatio:false,plugins:{title:{display:true,text:t('ch1')},tooltip:{callbacks:{label:c=>c.label+': '+fm(c.raw)}}}}});
+chart('c2',{type:'bar',data:{labels:gs.map(g=>g.name),datasets:[{label:t('solo'),data:gs.map(g=>g.standalone),backgroundColor:P[0]},{label:t('after'),data:gs.map(g=>g.feasibility),backgroundColor:P[2]}]},options:{maintainAspectRatio:false,scales:{y:{min:0,max:100}},plugins:{title:{display:true,text:t('ch2')}}}});
+chart('c3',{type:'bar',data:{labels:r.stress.map(s=>t(s.code)),datasets:[{data:r.stress.map(s=>s.overall),backgroundColor:r.stress.map(s=>s.overall>=80?P[2]:s.overall>=50?P[3]:P[1])}]},options:{maintainAspectRatio:false,scales:{y:{min:0,max:100}},plugins:{legend:{display:false},title:{display:true,text:t('ch3')}}}})}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function md(s){return esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').split('\n').map(l=>/^\s*[-*] /.test(l)?'<li>'+l.replace(/^\s*[-*] /,'')+'</li>':/^#+ /.test(l)?'<h3>'+l.replace(/^#+ /,'')+'</h3>':l.trim()?'<p>'+l+'</p>':'').join('')}
+function ok(){return $('cf').checked&&last&&!last.error}
+function btns(){['ai','save','xl'].forEach(i=>$(i).disabled=!ok())}
+$('cf').onchange=btns;
+const msg=s=>$('msg').textContent=s;
+$('ai').onclick=async()=>{msg(t('busy'));const r=await post('/api/advice',{data:collect(),result:last,lang:L,key:$('key').value,confirmed:true});const j=await r.json();msg('');if(j.text){advice=j.text;$('adv').innerHTML=md(j.text)}else msg(j.error)};
+$('save').onclick=async()=>{const j=await (await post('/api/save',{name:$('cname').value,data:collect(),result:last,advice,confirmed:true})).json();msg(j.id?t('saved')+j.id:j.error)};
+async function dl(r,n){if(!r.ok){msg((await r.json()).error);return}const u=URL.createObjectURL(await r.blob()),a=document.createElement('a');a.href=u;a.download=n;a.click();URL.revokeObjectURL(u)}
+$('xl').onclick=async()=>dl(await post('/api/export',{data:collect(),result:last,advice}),'financial_plan.xlsx');
+$('axl').onclick=async()=>dl(await post('/api/admin/export',{},{'X-Admin-Key':$('akey').value}),'all_customers.xlsx');
+$('ibtn').onclick=async()=>{$('imiss').textContent=t('busy');const j=await (await post('/api/intake',{text:$('itx').value,lang:L,key:$('key').value})).json();if(j.error){$('imiss').textContent=j.error;return}
+F.forEach(([k])=>{if(j[k]!=null)$(k).value=j[k]});(j.goals||[]).slice(0,3).forEach((g,i)=>{$('gn'+i).value=g.name||'';if(GT.includes(g.type))$('gt'+i).value=g.type;$('gg'+i).value=g.target||0;$('gc'+i).value=g.current||0;$('gy'+i).value=g.years||0});
+$('imiss').textContent=((j.missing||[]).length?t('need')+j.missing.join(', ')+'. ':'')+(j.questions||[]).join(' ');sched()};
+$('lang').onclick=()=>{L=L=='en'?'vi':'en';i18n()};
+$('theme').onclick=()=>{const d=document.documentElement;d.dataset.theme=d.dataset.theme=='dark'?'light':'dark';i18n()};
+if(matchMedia('(prefers-color-scheme: dark)').matches)document.documentElement.dataset.theme='dark';
+i18n();run();
+</script></body></html>
